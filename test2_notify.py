@@ -1,31 +1,31 @@
 import cv2
+import time  # 時間を計るためのライブラリ
 
-# カメラの準備（0はパソコンに内蔵されている標準カメラを指します）
-# もしUSBカメラなどを繋いでいて映らない場合は、0を1や2に変更してみてください
+# カメラの準備
 cap = cv2.VideoCapture(0)
 
-print("カメラを起動しました。終了するには映像のウィンドウを選択した状態で「q」キーを押してください。")
+if not cap.isOpened():
+    print("エラー: カメラに接続できませんでした。")
+    exit()
 
-# 無限ループで映像のコマ（フレーム）を取得し続ける
-while True:
-    # カメラから1コマ分の画像を読み込む
-    # ret: 正しく読み込めたかどうかの結果（True/False）
-    # frame: 実際の画像データ
+print("1秒おきに5枚の写真を撮影します...")
+
+# 5回繰り返す
+for i in range(1, 6):
+    # 1秒間、プログラムを一時停止（待つ）
+    time.sleep(1.0)
+    
+    # カメラの最新のコマを読み込む
     ret, frame = cap.read()
+    
+    if ret:
+        # ファイル名を "photo_1.jpg", "photo_2.jpg" のように変えて保存する
+        filename = f"photo_{i}.jpg"
+        cv2.imwrite(filename, frame)
+        print(f"【{i}枚目】 {filename} を保存しました！")
+    else:
+        print(f"【{i}枚目】 撮影に失敗しました。")
 
-    # 画像が正しく読み込めなかった場合はループを抜ける
-    if not ret:
-        print("映像を取得できませんでした。")
-        break
-
-    # ウィンドウを開いて、取得した画像（frame）を表示する
-    cv2.imshow('Camera Capture', frame)
-
-    # 1ミリ秒だけ待機し、その間にキーボードの「q」が押されたらループを終了する
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        print("終了します...")
-        break
-
-# 使い終わったカメラを解放して、ウィンドウをすべて閉じる（後片付け）
+# 後片付け
 cap.release()
-cv2.destroyAllWindows()
+print("すべて完了しました。")
