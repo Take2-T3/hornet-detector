@@ -10,10 +10,10 @@ import onnxruntime as ort    # 【追加】AIを動かすライブラリ
 SAVE_DIR = "captures"      # 画像保存フォルダ
 INTERVAL = 0.5             # 0.5秒おきに撮影
 MAX_IMAGES = 1200          # 10分間（1200枚）保持
-MODEL_PATH = "model.onnx"  # ⚠️ AさんからもらうONNXファイルの名前
-IMG_SIZE = 640             # ⚠️ AIが指定する画像サイズ（YOLOは基本640）
-CONF_THRESHOLD = 0.70      # ⚠️ 何%以上の確率なら「ハチ」と判定するか（70%）
-WEBHOOK_URL = "あなたのDiscordのWebhook_URL"
+MODEL_PATH = "model.onnx"  # ONNXファイルのファイル名（変更必要）
+IMG_SIZE = 640             #　画像サイズ（YOLOは基本640）
+CONF_THRESHOLD = 0.50      # 蜂の認識自信度
+WEBHOOK_URL = "https://discord.com/api/webhooks/1506874693947363328/dL9r2sDhpzFtv3LG5-8Y5sILVmXokLdRVHQeUlFi93_-c1w9KlGcBJomZO7mOKPnh5dE"
 # ======================
 
 # 1. フォルダの準備
@@ -83,7 +83,7 @@ try:
         time.sleep(INTERVAL)
 
 except KeyboardInterrupt:
-    print("\n🛑 監視システムを安全に停止しました。")
+    print("\n監視システムを停止しました。")
 
 finally:
     cap.release()
