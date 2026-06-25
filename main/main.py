@@ -13,7 +13,7 @@ INTERVAL = 0.5             # 0.5秒おきに撮影
 MAX_IMAGES = 1200          # 10分間（1200枚）保持
 MODEL_PATH = "best.onnx"  # ONNXファイルのファイル名
 IMG_SIZE = 640             # 画像サイズ（YOLOは基本640）
-CONF_THRESHOLD = 0.50      # 蜂の認識自信度
+CONF_THRESHOLD = 0.20      # 蜂の認識自信度
 WEBHOOK_URL = "https://discord.com/api/webhooks/1506874693947363328/dL9r2sDhpzFtv3LG5-8Y5sILVmXokLdRVHQeUlFi93_-c1w9KlGcBJomZO7mOKPnh5dE"
 # ======================
 
