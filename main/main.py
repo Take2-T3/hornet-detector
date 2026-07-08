@@ -15,6 +15,10 @@ MODEL_PATH = "best.onnx"   # ONNXファイルのファイル名
 IMG_SIZE = 640             # 画像サイズ（YOLOは基本640）
 CONF_THRESHOLD = 0.20      # 蜂の認識自信度（20%以上で検知）
 WEBHOOK_URL = "https://discord.com/api/webhooks/1506874693947363328/dL9r2sDhpzFtv3LG5-8Y5sILVmXokLdRVHQeUlFi93_-c1w9KlGcBJomZO7mOKPnh5dE"
+
+# --- 【追加】運用・防衛設定 ---
+ALERT_COOLDOWN = 60        # 通知のクールダウン時間（秒）※60秒＝1分
+HEARTBEAT_HOUR = "08"      # 生存報告を送る時間（時）
 # ======================
 
 # 1. フォルダの準備
@@ -38,6 +42,10 @@ if not cap.isOpened():
 
 print(f"👁️ {INTERVAL}秒おきの監視システムを開始します。（停止: Ctrl + C）")
 
+# --- 【追加】状態記憶用の変数 ---
+last_alert_time = 0
+last_heartbeat_date = ""
+
 try:
     while True:
         ret, frame = cap.read()
@@ -45,7 +53,27 @@ try:
         if ret:
             # --- 情報の取得 ---
             original_h, original_w = frame.shape[:2]
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+            
+            # 【変更】タイムスタンプ生成の基礎となる現在時刻をオブジェクトで取得するように微調整
+            current_time_obj = datetime.now()
+            timestamp = current_time_obj.strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+            
+            # --- 【追加】画像への時刻スタンプ焼き付け ---
+            display_time = current_time_obj.strftime("%Y/%m/%d %H:%M:%S")
+            cv2.putText(frame, display_time, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)       # 黒フチ
+            cv2.putText(frame, display_time, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2) # 白文字
+
+            # --- 【追加】生存報告（ハートビート） ---
+            current_date_str = current_time_obj.strftime("%Y-%m-%d")
+            current_hour_str = current_time_obj.strftime("%H")
+            if current_hour_str == HEARTBEAT_HOUR and last_heartbeat_date != current_date_str:
+                try:
+                    payload = {"content": f"🤖 【生存報告】{current_date_str} {current_hour_str}:00 - システムは正常に稼働中です。"}
+                    requests.post(WEBHOOK_URL, data=payload)
+                    print("✅ 生存報告をDiscordに送信しました。")
+                    last_heartbeat_date = current_date_str
+                except Exception as e:
+                    print(f"❌ 生存報告エラー: {e}")
             
             # --- 【脳】AIによるハチ判定（計算） ---
             img_resized = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
@@ -95,17 +123,26 @@ try:
             # --- 【口】Discordへ通知 ---
             if max_confidence >= CONF_THRESHOLD:
                 print(f"🐝 ⚠️ 警告：ハチを検知しました！！ (確率: {max_confidence*100:.1f}%)")
-                try:
-                    with open(filename, "rb") as f:
-                        image_data = f.read()
-                    
-                    payload = {"content": f"🐝 ⚠️ 警告：ハチを検知しました！！ (AI自信度: {max_confidence*100:.1f}%)"}
-                    file_data = {"file": (filename, image_data, "image/jpeg")}
-                    requests.post(WEBHOOK_URL, data=payload, files=file_data)
-                    
-                    print(f"✅ Discordに警告と画像を送信しました！ ({filename})")
-                except Exception as e:
-                    print(f"❌ Discord通知エラー: {e}")
+                
+                # --- 【追加】クールダウン判定 ---
+                current_unix_time = time.time()
+                if current_unix_time - last_alert_time > ALERT_COOLDOWN:
+                    try:
+                        with open(filename, "rb") as f:
+                            image_data = f.read()
+                        
+                        payload = {"content": f"🐝 ⚠️ 警告：ハチを検知しました！！ (AI自信度: {max_confidence*100:.1f}%)"}
+                        file_data = {"file": (filename, image_data, "image/jpeg")}
+                        requests.post(WEBHOOK_URL, data=payload, files=file_data)
+                        
+                        print(f"✅ Discordに警告と画像を送信しました！ ({filename})")
+                        last_alert_time = current_unix_time # 【追加】最終通知時間を更新
+                    except Exception as e:
+                        print(f"❌ Discord通知エラー: {e}")
+                else:
+                    # --- 【追加】クールダウン中の場合 ---
+                    remain_time = int(ALERT_COOLDOWN - (current_unix_time - last_alert_time))
+                    print(f"⏳ クールダウン中... 通知をスキップ。（残り {remain_time} 秒）")
             else:
                 print(f"📸 {filename} を保存 (ハチなし: 最大確率 {max_confidence*100:.1f}%)")
 
