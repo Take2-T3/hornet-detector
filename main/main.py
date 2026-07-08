@@ -45,7 +45,7 @@ try:
         if ret:
             # --- 情報の取得 ---
             original_h, original_w = frame.shape[:2]
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
             
             # --- 【脳】AIによるハチ判定（計算） ---
             img_resized = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
